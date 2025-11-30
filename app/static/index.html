@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Movie Recommender UI</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        padding: 2rem;
+        background: #f8f9fa;
+      }
+      .card {
+        margin-bottom: 1rem;
+      }
+      textarea {
+        resize: vertical;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="mb-4">Movie Recommender</h1>
+
+      <div class="row">
+        <div class="col-md-5">
+          <div class="card p-3">
+            <h5>Search by Title</h5>
+            <form id="titleForm">
+              <div class="mb-2">
+                <input
+                  id="titleInput"
+                  class="form-control"
+                  placeholder="e.g., The Matrix"
+                />
+              </div>
+              <div class="mb-2">
+                <input
+                  id="titleN"
+                  type="number"
+                  class="form-control"
+                  value="5"
+                  min="1"
+                  max="20"
+                />
+              </div>
+              <button class="btn btn-primary">Get Recommendations</button>
+            </form>
+          </div>
+
+          <div class="card p-3">
+            <h5>Or paste a plot / overview</h5>
+            <form id="plotForm">
+              <div class="mb-2">
+                <textarea
+                  id="plotInput"
+                  class="form-control"
+                  rows="6"
+                  placeholder="Paste a movie plot..."
+                ></textarea>
+              </div>
+              <div class="mb-2">
+                <input
+                  id="plotN"
+                  type="number"
+                  class="form-control"
+                  value="5"
+                  min="1"
+                  max="20"
+                />
+              </div>
+              <button class="btn btn-success">Find Similar Movies</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="col-md-7">
+          <div class="card p-3">
+            <h5>Recommendations</h5>
+            <div id="results">No results yet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      async function showResults(data) {
+        const container = document.getElementById("results");
+        container.innerHTML = "";
+        if (!data) {
+          container.innerText = "No data.";
+          return;
+        }
+        if (data.error) {
+          container.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+          return;
+        }
+        const list = data.recommendations || [];
+        if (list.length === 0) {
+          container.innerHTML =
+            '<div class="alert alert-info">No recommendations found.</div>';
+          return;
+        }
+        const ul = document.createElement("div");
+        ul.className = "list-group";
+        list.forEach((item) => {
+          const el = document.createElement("div");
+          el.className = "list-group-item";
+          el.innerHTML = `<div class="fw-bold">${
+            item.title
+          } <small class="text-muted">(${item.year || "N/A"})</small></div>
+                    <div class="small">${item.genres || ""}</div>
+                    <div class="mt-1">${
+                      item.overview ? item.overview.substring(0, 200) : ""
+                    }</div>`;
+          ul.appendChild(el);
+        });
+        container.appendChild(ul);
+      }
+
+      document
+        .getElementById("titleForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const title = document.getElementById("titleInput").value;
+          const n = document.getElementById("titleN").value || 5;
+          if (!title) {
+            alert("Enter a title");
+            return;
+          }
+          const res = await fetch(
+            `/recommend?title=${encodeURIComponent(title)}&n=${n}`
+          );
+          const data = await res.json();
+          showResults(data);
+        });
+
+      document
+        .getElementById("plotForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const plot = document.getElementById("plotInput").value;
+          const n = document.getElementById("plotN").value || 5;
+          if (!plot) {
+            alert("Paste a plot");
+            return;
+          }
+          const res = await fetch("/recommend_text", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ plot: plot, n: n }),
+          });
+          const data = await res.json();
+          showResults(data);
+        });
+    </script>
+  </body>
+</html>

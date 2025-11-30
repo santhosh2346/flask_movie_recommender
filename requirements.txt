@@ -1,0 +1,8 @@
+flask
+pandas
+numpy
+scikit-learn
+scipy
+jinja2
+pytest
+python-dotenv
